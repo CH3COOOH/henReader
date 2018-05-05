@@ -1,0 +1,71 @@
+html{
+	overflow-y:scroll;
+}
+body{
+	color: #333;
+	background:#dbdbdb;
+}
+a{color:#333;text-decoration:none;}
+a:hover{ text-decoration:underline;color:#3366cc;}
+
+/*Album*/
+.gallary_wrap li.li{
+	float:left;
+	width:240px;
+	padding:15px 0;
+	height:320px;
+}
+.wrap li.li{
+	float:left;
+	width:225px;
+	padding:15px 0;
+	height:225px;
+}
+.grid .pic_box{
+	margin-bottom:10px;
+}
+.grid .pic_box img{
+	vertical-align:bottom;
+	padding:3px;
+	background:#fff;
+	border:1px solid #ccc;
+	height:239px;
+	width:180px;
+}
+.grid .pic_ctl{
+	display:none;
+	color:#aaa;
+}
+.grid .pic_ctl a{
+	color:#3366cc;
+}
+
+.grid .info{
+	overflow:hidden;
+}
+.grid .info .title{
+	font-size:14px;
+	line-height:1.5;
+	width:220px;
+	white-space: nowrap;
+	overflow: hidden; 
+	text-overflow:ellipsis;
+}
+
+.grid .info .title span.cover{
+    background:green;
+    color:white;
+    padding:0 5px;
+		font-size:12px;
+		line-height:18px;
+		display:inline-block;
+		margin-right:5px;
+}
+.grid .info .info_col{
+	padding:5px 0;
+	color:#999;
+	line-height:20px;
+}
+.grid .info .info_col a{
+	color:#999;
+}

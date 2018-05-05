@@ -1,0 +1,20 @@
+html,body{height:100%;}
+body{margin:5;padding: 0;font-size:24px;font-family: Arial;}
+.cc{*zoom:1;}
+.cc:after{content:'\20';display:block;height:0;clear:both;visibility: hidden;}
+.c{clear:both;font:0px/0px Arial;overflow:hidden;height:0;width:0;}
+img{border:none;}
+td { font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif; }
+.pre, pre {
+    overflow: hidden;
+    text-align: left;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+ul,li, dl, dd, p, h1, h2, h3, h4, h5, h6, form, fieldset{margin:0;padding:0;}
+li{list-style:none;}
+a{text-decoration:underline;outline:0;
+    blr:expression(this.onFocus=this.blur());
+}
+a:hover{text-decoration:none;}
