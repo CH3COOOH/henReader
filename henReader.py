@@ -2,27 +2,34 @@
 
 # =====** henReader Ultimate **=====
 # *** Put *.zip in library/
-# 2018.05.04: 1st live with *.zip support
+# 2018.05.04(az): 1st live with *.zip support
+# 2018.05.05(az): *.rar supported; adjust the layout
+# * The *.css files are not created by me :)
 # ==================================
 
 import base64
 import os
 import hashlib
+import zipfile
 
 from bottle import Bottle, route, run, template, static_file
 from PIL import Image
-import zipfile
+import rarfile
 
-BOOK_DIR = './library'
+ROOT_LIB = './library/'
+ROOT_STYLE = './css/'
+ROOT_THUMB = './thumb/'
+
+TITLE_INDEX = 'henReader'
 
 def evrCheck():
 	print('Checking runtime...')
 	if os.name == 'nt':
-		print('Windows NG!')
-		return -1
-	for fname in ['css', 'thumb', BOOK_DIR]:
-		if not os.path.exists(fname):
-			os.mkdir(fname)
+		print('Windows, NG!')
+		exit()
+	# for fname in ['css', 'thumb', ROOT_LIB]:
+	# 	if not os.path.exists(fname):
+	# 		os.mkdir(fname)
 
 def imgCompress(fname, sname, resize=(128, 128)):
 	img = Image.open(fname)
@@ -42,9 +49,13 @@ def extFilter(rawLst, supported):
 			if s in i.lower():
 				lstNew.append(i)
 				break
-	return lstNew			
+	return lstNew	
 
-hashLst = {}
+def achFormate(ext, path):
+	if ext == '.zip':
+		return zipfile.ZipFile(path)
+	elif ext == '.rar':
+		return rarfile.RarFile(path)
 
 def standardHTML(title, content):
 	return '''
@@ -68,24 +79,26 @@ def standardHTML(title, content):
 <body>
 	''' % (title, content)
 
+hashLst = {}
+
 @route('/')
 def index():
 
 	frontPage = ''
 	hl = hashlib.md5()
 
-	bookLst = filter(lambda x: '.zip' in x, os.listdir(BOOK_DIR))
+	bookLst = filter((lambda x: os.path.splitext(x)[-1] in ['.rar', '.zip']), os.listdir(ROOT_LIB))
 	for bookName in bookLst:
 		# ----- Make frontpage
-		z = zipfile.ZipFile('./library/' + bookName)
+		ach = achFormate(os.path.splitext(bookName)[-1], ROOT_LIB+bookName)
 		hl.update(base64.b64encode(bookName))
 		bn_md5 = hl.hexdigest()
-		path_thumb = './thumb/' + bn_md5
+		path_thumb = ROOT_THUMB + bn_md5
 		if os.path.exists(path_thumb) == False:
 			with open('%s' % path_thumb, 'w' ) as o:
-				o.write(z.read(sorted(extFilter(z.namelist(), ['.jpg', '.png', '.jpeg']))[0]))
+				o.write(ach.read(sorted(extFilter(ach.namelist(), ['.jpg', '.png', '.jpeg']))[0]))
 			imgCompress(path_thumb, path_thumb, (256, 256))
-		z.close()
+		ach.close()
 
 		frontPage += '''
 		<li class="li gallary_item">
@@ -96,7 +109,7 @@ def index():
 
 		#----- Update hashLst
 		hashLst[bn_md5] = bookName
-	return standardHTML('index', frontPage)
+	return standardHTML(TITLE_INDEX, frontPage)
 
 @route('/<fname>')
 def default(fname):
@@ -104,17 +117,21 @@ def default(fname):
 
 @route('/css/<fname>')
 def default(fname):
-	return static_file(fname, root='./css/')
+	return static_file(fname, root=ROOT_STYLE)
 
 @route('/thumb/<fname>')
 def default(fname):
-	return static_file(fname, root='./thumb/', mimetype='image/png')
+	return static_file(fname, root=ROOT_THUMB, mimetype='image/png')
 
 @route('/book/<nameHash>/<page>')
 def reader(nameHash, page):
-	bookPath = './library/' + unicode(hashLst[nameHash], 'utf-8')
+	bookPath = ROOT_LIB + unicode(hashLst[nameHash], 'utf-8')
 	# print bookPath
-	zbook = zipfile.ZipFile(bookPath)
+	fExt = os.path.splitext(bookPath)[-1]
+	if fExt == '.zip':
+		zbook = zipfile.ZipFile(bookPath)
+	elif fExt == '.rar':
+		zbook = rarfile.RarFile(bookPath)
 	imgLst = sorted(extFilter(zbook.namelist(), ['.jpg', '.png', '.jpeg']))
 	page_total = len(imgLst)
 	if int(page) >= page_total:
