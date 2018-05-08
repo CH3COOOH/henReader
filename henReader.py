@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 
 # =====** henReader Ultimate **=====
-# *** Put *.zip in library/
+# *** os: rar required
+# *** python: bottle, pillow and rarfile are required
+# *** Put *.zip and *.rar in library/
+#
 # 2018.05.04(az): 1st live with *.zip support
-# 2018.05.05(az): *.rar supported; adjust the layout
+# 2018.05.05(az): *.rar supported; adjust the layout; add simple entry password
+#
 # * The *.css files are not created by me :)
 # ==================================
 
@@ -19,6 +23,7 @@ import rarfile
 ROOT_LIB = './library/'
 ROOT_STYLE = './css/'
 ROOT_THUMB = './thumb/'
+PWD_SIMPLE = 'w0yrvwzqg3'
 
 TITLE_INDEX = 'henReader'
 
@@ -30,6 +35,12 @@ def evrCheck():
 	# for fname in ['css', 'thumb', ROOT_LIB]:
 	# 	if not os.path.exists(fname):
 	# 		os.mkdir(fname)
+
+def strLengthLimit(strRaw, length, replace='...'):
+	if len(strRaw) >= length:
+		return strRaw[:length] + replace
+	else:
+		return strRaw
 
 def imgCompress(fname, sname, resize=(128, 128)):
 	img = Image.open(fname)
@@ -57,6 +68,11 @@ def achFormate(ext, path):
 	elif ext == '.rar':
 		return rarfile.RarFile(path)
 
+def md5Gen(strRaw):
+	hl = hashlib.md5()
+	hl.update(base64.b64encode(strRaw))
+	return hl.hexdigest()
+
 def standardHTML(title, content):
 	return '''
 <html>
@@ -81,18 +97,16 @@ def standardHTML(title, content):
 
 hashLst = {}
 
-@route('/')
+@route('/'+PWD_SIMPLE)
 def index():
 
 	frontPage = ''
-	hl = hashlib.md5()
 
 	bookLst = filter((lambda x: os.path.splitext(x)[-1] in ['.rar', '.zip']), os.listdir(ROOT_LIB))
 	for bookName in bookLst:
 		# ----- Make frontpage
 		ach = achFormate(os.path.splitext(bookName)[-1], ROOT_LIB+bookName)
-		hl.update(base64.b64encode(bookName))
-		bn_md5 = hl.hexdigest()
+		bn_md5 = md5Gen(bookName)
 		path_thumb = ROOT_THUMB + bn_md5
 		if os.path.exists(path_thumb) == False:
 			with open('%s' % path_thumb, 'w' ) as o:
@@ -105,7 +119,7 @@ def index():
 		<div class="pic_box">%s</div>
 		<div class="info">%s</div>
 		</li>
-		''' % (imgUrlGen(path_thumb, ('book/%s/0' % bn_md5, '_blank')), bookName)
+		''' % (imgUrlGen(path_thumb, ('book/%s/0' % bn_md5, '_blank')), strLengthLimit(bookName, 48))
 
 		#----- Update hashLst
 		hashLst[bn_md5] = bookName
@@ -113,7 +127,10 @@ def index():
 
 @route('/<fname>')
 def default(fname):
-	return static_file(fname, root='.')
+	if fname == 'henReader.py':
+		return 'What do you want to do???'
+	else:	
+		return static_file(fname, root='.')
 
 @route('/css/<fname>')
 def default(fname):
