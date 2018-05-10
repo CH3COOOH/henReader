@@ -1,2 +1,2 @@
 # henReader
-A HTML comic reader which supports *.zip files
+A HTML comic reader which supports *.zip & *.rar files

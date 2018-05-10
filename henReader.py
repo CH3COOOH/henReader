@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+VER = '1.0'
 # =====** henReader Ultimate **=====
 # *** os: rar required
 # *** python: bottle, pillow and rarfile are required
@@ -8,6 +9,7 @@
 # 2018.05.04(az): 1st live with *.zip support
 # 2018.05.05(az): *.rar supported; adjust the layout; add simple entry password
 # 2018.05.06(az): 2 layers folders supported; utilize azLib.py
+# 2018.05.10(az): Now can import external config file; v1.0
 #
 # * The *.css files are not created by me :)
 # ==================================
@@ -17,13 +19,20 @@ import os
 import hashlib
 import zipfile
 import pickle
+import json
 
+# The server depend on follow libraries:
+# bottle, pillow, gevent, rarfile
+# 'pip install ...' them all
 from bottle import Bottle, route, run, template, static_file
 from PIL import Image
+from gevent import monkey
 import rarfile
 
 import azLib as al
 
+# Default config
+# ------------------------------------
 HOST = '0.0.0.0'
 PORT = 8005
 PWD_SIMPLE = ''
@@ -37,6 +46,32 @@ FNAME_IDX = 'index.htm'					# Cache of frontpage
 FNAME_MAP = 'status.pcl'				# Map of hash -> file name
 
 TITLE_INDEX = 'henReader'
+# ------------------------------------
+
+def u28(strRaw, emptyDel=False):
+	if emptyDel:
+		return strRaw.strip().encode('utf-8')
+	else:
+		return strRaw.encode('utf-8')
+
+try:
+	with open('./config.json', 'r') as o:
+		dc = json.load(o)
+		print('Try to load from ./config.json...')
+	HOST = dc['bind']
+	PORT = dc['port']
+
+	PWD_SIMPLE = dc['url_pwd']
+	ROOT_LIB = u28(dc['ROOT_LIB'])
+	ROOT_STYLE = u28(dc['ROOT_CSS'])
+	ROOT_THUMB = u28(dc['ROOT_THUMB'])
+	FNAME_FOLDERICO = u28(dc['PATH_FOLDERICO'])
+	FNAME_FS = u28(dc['PATH_FS'])
+	FNAME_IDX = u28(dc['PATH_IDX'])
+	FNAME_MAP = u28(dc['PATH_MAP'])
+	TITLE_INDEX = u28(dc['title_index'])
+except:
+	print('There is no valid ./config.json. Default config used.')
 
 cfs_md5 = None
 fo = al.FileOperation()
@@ -44,12 +79,17 @@ hs = al.Hash()
 hashLst = {}
 bookLst = {}
 
+
 def evrCheck():
 	print('Checking runtime...')
 	if os.name == 'nt':
-		print('Windows, NG!')
+		raw_input('Windows, NG!')
 		exit()
 	print('No problem.')
+	print('''====================
+ henReader ultimate
+ ver %s
+====================''' % VER)
 
 def strLengthLimit(strRaw, length, replace='...'):
 	if len(strRaw) >= length:
@@ -131,7 +171,7 @@ def indexGen(bookLst, isIndex=True, root=ROOT_LIB):
 
 		folderName_md5 = hs.str2md5(folderName)
 		hashLst[folderName_md5] = folderName
-		print ('%s %s' % (folderName, ROOT_LIB))
+		# print ('%s %s' % (folderName, ROOT_LIB))
 		if isIndex and folderName == ROOT_LIB[:-1]:
 			continue
 		if not isIndex:
@@ -227,7 +267,7 @@ def reader(pathHash, page):
 		return 'You have finished this book.'
 	fCurrent = 'data:image/jpeg;base64,' + base64.b64encode(zbook.read(imgLst[int(page)]))
 	zbook.close()
-	html_img = imgUrlGen(fCurrent, ('/book/%s/%d' % (pathHash, int(page)+1), ''), (512,512), 'mainImg') + '<br>'
+	html_img = imgUrlGen(fCurrent, ('/book/%s/%d' % (pathHash, int(page)+1), ''), (1,1), 'mainImg') + '<br>'
 	for i in xrange(page_total):
 		html_img += '<a href=\"/book/%s/%d\">[%d]</a>' % (pathHash, i, i)
 	html_img += '''
@@ -245,7 +285,6 @@ def reader(pathHash, page):
 
 if __name__ == '__main__':
 	evrCheck()
-	from gevent import monkey
 	monkey.patch_all()
 
 	bookLst = fo.classifiedFileLst(ROOT_LIB, ['.zip', '.rar'])
