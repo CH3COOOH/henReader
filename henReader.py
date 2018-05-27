@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-VER = '1.0'
+VER = '1.1'
 # =====** henReader Ultimate **=====
 # *** os: rar required
 # *** python: bottle, pillow and rarfile are required
@@ -10,6 +10,7 @@ VER = '1.0'
 # 2018.05.05(az): *.rar supported; adjust the layout; add simple entry password
 # 2018.05.06(az): 2 layers folders supported; utilize azLib.py
 # 2018.05.10(az): Now can import external config file; v1.0
+# 2018.05.27(az): Page shows on title; add CG mode plugin
 #
 # * The *.css files are not created by me :)
 # ==================================
@@ -54,6 +55,7 @@ def u28(strRaw, emptyDel=False):
 	else:
 		return strRaw.encode('utf-8')
 
+# Read config file (or use default config)
 try:
 	with open('./config.json', 'r') as o:
 		dc = json.load(o)
@@ -159,7 +161,7 @@ def standardHTML(title, content):
 <body>
 	''' % (title, content)
 
-def indexGen(bookLst, isIndex=True, root=ROOT_LIB):
+def indexGen(bookLst, isIndex=True, root=ROOT_LIB, extraShelf=[]):
 	frontPage = ''
 
 	# ----- Folder check & add to the page
@@ -177,6 +179,10 @@ def indexGen(bookLst, isIndex=True, root=ROOT_LIB):
 		if not isIndex:
 			break
 		frontPage += picBlock(FNAME_FOLDERICO, ('folder/%s' % folderName_md5, ''), strLengthLimit(folderName.replace(ROOT_LIB, ''), 48))
+	
+	# ----- Plugins can be added via this
+	for exUrl in extraShelf:
+		frontPage += picBlock(FNAME_FOLDERICO, (exUrl, '_blank'), exUrl)
 	
 	for folderName in bookLst.keys():
 		# ----- Comic from root
@@ -208,6 +214,39 @@ def picBlock(imgPath, Url, text):
 			''' % (imgUrlGen(imgPath, url=Url), text)
 
 
+class Plugins:
+	# History file records url of last page that the user read
+	def history(self, fname, text='LAST READ'):
+		try:
+			with open(fname, 'r') as o:
+				last = o.read().strip()
+			return '<a href=\"%s">%s</a>' % (last, text)
+		except:
+			return ''
+	
+	def CGMode(self, root_img, root_imgUrl='/cg', root_pageUrl='/cgs', page=0):
+		imgPath = filter(lambda x: os.path.splitext(x)[-1] in ['.jpg', '.png', '.gif', '.jpeg'], os.listdir(root_img))
+		print imgPath
+		imgPath = map(lambda x: root_imgUrl+'/'+x, imgPath)
+		if page+1 == len(imgPath):
+			html = imgUrlGen(imgPath[page], ('%s/%d' % (root_pageUrl, 0), ''), (1,1), 'mainImg') + '<br>'
+		else:
+			html = imgUrlGen(imgPath[page], ('%s/%d' % (root_pageUrl, page+1), ''), (1,1), 'mainImg') + '<br>'
+		for i in xrange(len(imgPath)):
+			html += '<a href=\"%s/%d\">[%d]</a>' % (root_pageUrl, i, i)
+		html += '''
+			<script>
+			var BORDER = 1.05;
+			if (1.0 * $('#mainImg').height() / $(window).height() >= 1.0 * $('#mainImg').width() / $(window).width()) {
+				$('#mainImg').height($(window).height()/BORDER);
+			} else {
+				$('#mainImg').width($(window).width()/BORDER);
+			}
+			</script>
+		'''
+		return standardHTML('[%d]%s' % (page, root_imgUrl), html)
+		
+plugin = Plugins()
 
 # =================================================
 # Server response
@@ -217,13 +256,14 @@ def index():
 	global bookLst
 	bookLst = fo.classifiedFileLst(ROOT_LIB, ['.zip', '.rar'])
 	bookLst_md5 = hs.str2md5(str(bookLst))
+	
 	if hs.str2md5(str(bookLst)) == RW(FNAME_FS, None, 'r'):
 		hashLst = pickle.load(open(FNAME_MAP, 'r'))
 		return static_file(FNAME_IDX, root='.')
 	else:
 		print('New file list created.')
 		hashLst = {}
-		stdHTML = indexGen(bookLst)
+		stdHTML = indexGen(bookLst, extraShelf=['/cgs/0'])
 		RW(FNAME_FS, bookLst_md5, 'w')
 		RW(FNAME_IDX, stdHTML, 'w')
 		pickle.dump(hashLst, open(FNAME_MAP, 'w'))
@@ -245,11 +285,11 @@ def default(fname):
 		return static_file(fname, root='.')
 
 @route('/css/<fname>')
-def default(fname):
+def css(fname):
 	return static_file(fname, root=ROOT_STYLE)
 
 @route('/thumb/<fname>')
-def default(fname):
+def thumb(fname):
 	return static_file(fname, root=ROOT_THUMB, mimetype='image/png')
 
 @route('/book/<pathHash>/<page>')
@@ -280,9 +320,26 @@ def reader(pathHash, page):
 		}
 	</script>
 	'''
-	return standardHTML(unicode(hashLst[pathHash[32:]], 'utf-8'), html_img)
+	
+	## This is user for histry plugin
+	## --------------------------------------------
+	# with open('reading', 'w') as o:
+	# 	o.write('book/%s/%s' % (pathHash, page))
+	## --------------------------------------------
+	
+	return standardHTML('[%s]'%page + unicode(hashLst[pathHash[32:]], 'utf-8'), html_img)
 
+# CGMode plugin - 2018.05.27
+# ----------------------------------------------------------------------
+@route('/cg/<fname>')
+def cgPath(fname):
+	return static_file(fname, root=ROOT_LIB+'cg', mimetype='image/png')
 
+@route('/cgs/<page>')
+def cgMode(page):
+	return plugin.CGMode(ROOT_LIB+'cg', page=int(page))
+# ----------------------------------------------------------------------
+	
 if __name__ == '__main__':
 	evrCheck()
 	monkey.patch_all()
@@ -290,7 +347,7 @@ if __name__ == '__main__':
 	bookLst = fo.classifiedFileLst(ROOT_LIB, ['.zip', '.rar'])
 	cfs_md5 = hs.str2md5(str(bookLst))
 	RW(FNAME_FS, cfs_md5, 'w')
-	RW(FNAME_IDX, indexGen(bookLst), 'w')
+	RW(FNAME_IDX, indexGen(bookLst, extraShelf=['/cgs/0']), 'w')
 	pickle.dump(hashLst, open(FNAME_MAP, 'w'))
 
 	run(host=HOST, port=PORT, debug=True, server='gevent')
