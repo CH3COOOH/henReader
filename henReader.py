@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-VER = '1.1'
+VER = '1.1.1'
 # =====** henReader Ultimate **=====
 # *** os: rar required
 # *** python: bottle, pillow and rarfile are required
@@ -11,6 +11,7 @@ VER = '1.1'
 # 2018.05.06(az): 2 layers folders supported; utilize azLib.py
 # 2018.05.10(az): Now can import external config file; v1.0
 # 2018.05.27(az): Page shows on title; add CG mode plugin
+# 2018.09.17(az): Modified sort method to make it sort '10, 2' correctly
 #
 # * The *.css files are not created by me :)
 # ==================================
@@ -48,6 +49,13 @@ FNAME_MAP = 'status.pcl'				# Map of hash -> file name
 
 TITLE_INDEX = 'henReader'
 # ------------------------------------
+
+import re
+re_digits = re.compile(r'(\d+)')
+def emb_numbers(s):
+	pieces=re_digits.split(s)
+	pieces[1::2]=map(int,pieces[1::2])
+	return pieces
 
 def u28(strRaw, emptyDel=False):
 	if emptyDel:
@@ -301,7 +309,7 @@ def reader(pathHash, page):
 		zbook = zipfile.ZipFile(bookPath)
 	elif fExt == '.rar':
 		zbook = rarfile.RarFile(bookPath)
-	imgLst = sorted(extFilter(zbook.namelist(), ['.jpg', '.png', '.jpeg']))
+	imgLst = sorted(extFilter(zbook.namelist(), ['.jpg', '.png', '.jpeg']), key=emb_numbers)
 	page_total = len(imgLst)
 	if int(page) >= page_total:
 		return 'You have finished this book.'
