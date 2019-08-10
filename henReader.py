@@ -12,7 +12,7 @@ VER = '1.1.1'
 # 2018.05.10(az): Now can import external config file; v1.0
 # 2018.05.27(az): Page shows on title; add CG mode plugin
 # 2018.09.17(az): Modified sort method to make it sort '10, 2' correctly
-# 2019.08.
+# 2019.08.10(az): Transplant to Python 3; add support to Windows
 #
 # * The *.css files are not created by me :)
 # ==================================
@@ -187,9 +187,7 @@ def indexGen(bookLst, isIndex=True, root=ROOT_LIB, extraShelf=[]):
 			continue
 		if not isIndex:
 			break
-		print(folderName)
-		# frontPage += picBlock(FNAME_FOLDERICO, ('folder/%s' % folderName_md5, ''), strLengthLimit(folderName.replace(ROOT_LIB, ''), 48))
-		frontPage += picBlock(FNAME_FOLDERICO, ('folder/%s' % folderName_md5, ''), folderName)
+		frontPage += picBlock(FNAME_FOLDERICO, ('folder/%s' % folderName_md5, ''), strLengthLimit(folderName.replace(ROOT_LIB, ''), 10))
 	
 	# ----- Plugins can be added via this
 	for exUrl in extraShelf:
@@ -210,8 +208,7 @@ def indexGen(bookLst, isIndex=True, root=ROOT_LIB, extraShelf=[]):
 				ach.close()
 
 				subPath_md5 = hs.str2md5(root[:-1].encode())
-				print(bookName)
-				frontPage += picBlock(path_thumb[1:], ('/book/%s/0' % (subPath_md5 + bn_md5), '_blank'), strLengthLimit(bookName, 48))
+				frontPage += picBlock(path_thumb[1:], ('/book/%s/0' % (subPath_md5 + bn_md5), '_blank'), strLengthLimit(bookName, 10))
 				#----- Update hashLst
 				hashLst[bn_md5] = bookName
 	stdHTML = standardHTML(TITLE_INDEX, frontPage)
@@ -238,13 +235,12 @@ class Plugins:
 	
 	def CGMode(self, root_img, root_imgUrl='/cg', root_pageUrl='/cgs', page=0):
 		imgPath = filter(lambda x: os.path.splitext(x)[-1] in ['.jpg', '.png', '.gif', '.jpeg'], os.listdir(root_img))
-		print(imgPath)
-		imgPath = map(lambda x: root_imgUrl+'/'+x, imgPath)
+		imgPath = list(map(lambda x: root_imgUrl+'/'+x, imgPath))
 		if page+1 == len(imgPath):
 			html = imgUrlGen(imgPath[page], ('%s/%d' % (root_pageUrl, 0), ''), (1,1), 'mainImg') + '<br>'
 		else:
 			html = imgUrlGen(imgPath[page], ('%s/%d' % (root_pageUrl, page+1), ''), (1,1), 'mainImg') + '<br>'
-		for i in xrange(len(imgPath)):
+		for i in range(len(imgPath)):
 			html += '<a href=\"%s/%d\">[%d]</a>' % (root_pageUrl, i, i)
 		html += '''
 			<script>
@@ -270,7 +266,8 @@ def index():
 	bookLst_md5 = hs.str2md5(str(bookLst).encode())
 	
 	if bookLst_md5 == RW(FNAME_FS, None, 'r'):
-		hashLst = pickle.load(open(FNAME_MAP, 'rb'))
+		with open(FNAME_MAP, 'rb') as o:
+			hashLst = pickle.load(o)
 		return static_file(FNAME_IDX, root='.')
 	else:
 		print('New file list created.')
@@ -278,7 +275,8 @@ def index():
 		stdHTML = indexGen(bookLst, extraShelf=['/cgs/0'])
 		RW(FNAME_FS.decode(), bookLst_md5, 'w')
 		RW(FNAME_IDX.decode(), stdHTML, 'w')
-		pickle.dump(hashLst, open(FNAME_MAP, 'wb'))
+		with open(FNAME_MAP, 'wb') as o:
+			pickle.dump(hashLst, o)
 		return stdHTML
 
 @route('/folder/<folderHash>')
@@ -357,10 +355,10 @@ if __name__ == '__main__':
 	monkey.patch_all()
 
 	bookLst = fo.classifiedFileLst(ROOT_LIB, ['.zip', '.rar'])
-	print(bookLst)
 	cfs_md5 = hs.str2md5(str(bookLst).encode())
 	RW(FNAME_FS, cfs_md5, 'w')
 	RW(FNAME_IDX, indexGen(bookLst, extraShelf=['/cgs/0']), 'w')
-	pickle.dump(hashLst, open(FNAME_MAP, 'wb'))
+	with open(FNAME_MAP, 'wb') as o:
+		pickle.dump(hashLst, o)
 
 	run(host=HOST, port=PORT, debug=True, server='gevent')
