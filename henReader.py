@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding:utf-8 -*-
 
 VER = '1.1.1'
 # =====** henReader Ultimate **=====
@@ -12,6 +12,7 @@ VER = '1.1.1'
 # 2018.05.10(az): Now can import external config file; v1.0
 # 2018.05.27(az): Page shows on title; add CG mode plugin
 # 2018.09.17(az): Modified sort method to make it sort '10, 2' correctly
+# 2019.08.
 #
 # * The *.css files are not created by me :)
 # ==================================
@@ -72,14 +73,14 @@ try:
 	PORT = dc['port']
 
 	PWD_SIMPLE = dc['url_pwd']
-	ROOT_LIB = u28(dc['ROOT_LIB'])
-	ROOT_STYLE = u28(dc['ROOT_CSS'])
-	ROOT_THUMB = u28(dc['ROOT_THUMB'])
-	FNAME_FOLDERICO = u28(dc['PATH_FOLDERICO'])
-	FNAME_FS = u28(dc['PATH_FS'])
-	FNAME_IDX = u28(dc['PATH_IDX'])
-	FNAME_MAP = u28(dc['PATH_MAP'])
-	TITLE_INDEX = u28(dc['title_index'])
+	ROOT_LIB = dc['ROOT_LIB']
+	ROOT_STYLE = dc['ROOT_CSS']
+	ROOT_THUMB = dc['ROOT_THUMB']
+	FNAME_FOLDERICO = dc['PATH_FOLDERICO']
+	FNAME_FS = dc['PATH_FS']
+	FNAME_IDX = dc['PATH_IDX']
+	FNAME_MAP = dc['PATH_MAP']
+	TITLE_INDEX = dc['title_index']
 except:
 	print('There is no valid ./config.json. Default config used.')
 
@@ -179,14 +180,16 @@ def indexGen(bookLst, isIndex=True, root=ROOT_LIB, extraShelf=[]):
 		if len(folderName.split('/')) >= 4:
 			continue
 
-		folderName_md5 = hs.str2md5(folderName)
+		folderName_md5 = hs.str2md5(folderName.encode())
 		hashLst[folderName_md5] = folderName
-		# print ('%s %s' % (folderName, ROOT_LIB))
+
 		if isIndex and folderName == ROOT_LIB[:-1]:
 			continue
 		if not isIndex:
 			break
-		frontPage += picBlock(FNAME_FOLDERICO, ('folder/%s' % folderName_md5, ''), strLengthLimit(folderName.replace(ROOT_LIB, ''), 48))
+		print(folderName)
+		# frontPage += picBlock(FNAME_FOLDERICO, ('folder/%s' % folderName_md5, ''), strLengthLimit(folderName.replace(ROOT_LIB, ''), 48))
+		frontPage += picBlock(FNAME_FOLDERICO, ('folder/%s' % folderName_md5, ''), folderName)
 	
 	# ----- Plugins can be added via this
 	for exUrl in extraShelf:
@@ -198,15 +201,16 @@ def indexGen(bookLst, isIndex=True, root=ROOT_LIB, extraShelf=[]):
 			for bookName in bookLst[folderName]:
 				# ----- Make frontpage
 				ach = achFormate(os.path.splitext(bookName)[-1], root+bookName)
-				bn_md5 = hs.str2md5(bookName)
+				bn_md5 = hs.str2md5(bookName.encode())
 				path_thumb = ROOT_THUMB + bn_md5
 				if os.path.exists(path_thumb) == False:
-					with open('%s' % path_thumb, 'w' ) as o:
+					with open('%s' % path_thumb, 'wb' ) as o:
 						o.write(ach.read(sorted(extFilter(ach.namelist(), ['.jpg', '.png', '.jpeg']))[0]))
 					imgCompress(path_thumb, path_thumb, (256, 256))
 				ach.close()
 
-				subPath_md5 = hs.str2md5(root[:-1])
+				subPath_md5 = hs.str2md5(root[:-1].encode())
+				print(bookName)
 				frontPage += picBlock(path_thumb[1:], ('/book/%s/0' % (subPath_md5 + bn_md5), '_blank'), strLengthLimit(bookName, 48))
 				#----- Update hashLst
 				hashLst[bn_md5] = bookName
@@ -216,10 +220,10 @@ def indexGen(bookLst, isIndex=True, root=ROOT_LIB, extraShelf=[]):
 def picBlock(imgPath, Url, text):
 	return '''
 			<li class="li gallary_item">
-			<div class="pic_box">%s</div>
-			<div class="info">%s</div>
+			<div class="pic_box">{0}</div>
+			<div class="info">{1}</div>
 			</li>
-			''' % (imgUrlGen(imgPath, url=Url), text)
+			'''.format(imgUrlGen(imgPath, url=Url), text)
 
 
 class Plugins:
@@ -234,7 +238,7 @@ class Plugins:
 	
 	def CGMode(self, root_img, root_imgUrl='/cg', root_pageUrl='/cgs', page=0):
 		imgPath = filter(lambda x: os.path.splitext(x)[-1] in ['.jpg', '.png', '.gif', '.jpeg'], os.listdir(root_img))
-		print imgPath
+		print(imgPath)
 		imgPath = map(lambda x: root_imgUrl+'/'+x, imgPath)
 		if page+1 == len(imgPath):
 			html = imgUrlGen(imgPath[page], ('%s/%d' % (root_pageUrl, 0), ''), (1,1), 'mainImg') + '<br>'
@@ -263,18 +267,18 @@ plugin = Plugins()
 def index():
 	global bookLst
 	bookLst = fo.classifiedFileLst(ROOT_LIB, ['.zip', '.rar'])
-	bookLst_md5 = hs.str2md5(str(bookLst))
+	bookLst_md5 = hs.str2md5(str(bookLst).encode())
 	
-	if hs.str2md5(str(bookLst)) == RW(FNAME_FS, None, 'r'):
-		hashLst = pickle.load(open(FNAME_MAP, 'r'))
+	if bookLst_md5 == RW(FNAME_FS, None, 'r'):
+		hashLst = pickle.load(open(FNAME_MAP, 'rb'))
 		return static_file(FNAME_IDX, root='.')
 	else:
 		print('New file list created.')
 		hashLst = {}
 		stdHTML = indexGen(bookLst, extraShelf=['/cgs/0'])
-		RW(FNAME_FS, bookLst_md5, 'w')
-		RW(FNAME_IDX, stdHTML, 'w')
-		pickle.dump(hashLst, open(FNAME_MAP, 'w'))
+		RW(FNAME_FS.decode(), bookLst_md5, 'w')
+		RW(FNAME_IDX.decode(), stdHTML, 'w')
+		pickle.dump(hashLst, open(FNAME_MAP, 'wb'))
 		return stdHTML
 
 @route('/folder/<folderHash>')
@@ -313,10 +317,10 @@ def reader(pathHash, page):
 	page_total = len(imgLst)
 	if int(page) >= page_total:
 		return 'You have finished this book.'
-	fCurrent = 'data:image/jpeg;base64,' + base64.b64encode(zbook.read(imgLst[int(page)]))
+	fCurrent = 'data:image/jpeg;base64,' + base64.b64encode(zbook.read(imgLst[int(page)])).decode()
 	zbook.close()
 	html_img = imgUrlGen(fCurrent, ('/book/%s/%d' % (pathHash, int(page)+1), ''), (1,1), 'mainImg') + '<br>'
-	for i in xrange(page_total):
+	for i in range(page_total):
 		html_img += '<a href=\"/book/%s/%d\">[%d]</a>' % (pathHash, i, i)
 	html_img += '''
 	<script>
@@ -335,7 +339,7 @@ def reader(pathHash, page):
 	# 	o.write('book/%s/%s' % (pathHash, page))
 	## --------------------------------------------
 	
-	return standardHTML('[%s]'%page + unicode(hashLst[pathHash[32:]], 'utf-8'), html_img)
+	return standardHTML('[%s]'%page + hashLst[pathHash[32:]], html_img)
 
 # CGMode plugin - 2018.05.27
 # ----------------------------------------------------------------------
@@ -349,13 +353,14 @@ def cgMode(page):
 # ----------------------------------------------------------------------
 	
 if __name__ == '__main__':
-	evrCheck()
+	# evrCheck()
 	monkey.patch_all()
 
 	bookLst = fo.classifiedFileLst(ROOT_LIB, ['.zip', '.rar'])
-	cfs_md5 = hs.str2md5(str(bookLst))
+	print(bookLst)
+	cfs_md5 = hs.str2md5(str(bookLst).encode())
 	RW(FNAME_FS, cfs_md5, 'w')
 	RW(FNAME_IDX, indexGen(bookLst, extraShelf=['/cgs/0']), 'w')
-	pickle.dump(hashLst, open(FNAME_MAP, 'w'))
+	pickle.dump(hashLst, open(FNAME_MAP, 'wb'))
 
 	run(host=HOST, port=PORT, debug=True, server='gevent')
