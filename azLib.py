@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding:utf-8 -*-
 # <-- AZLIBRARY PROJECT (Python2) -->
 # Started: 2018.02.02
 # Latest: 2018.05.08
