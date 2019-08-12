@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 
-VER = '1.1.1'
+VER = '1.2'
 # =====** henReader Ultimate **=====
 # *** os: rar required
 # *** python: bottle, pillow and rarfile are required
@@ -29,7 +29,6 @@ import json
 # 'pip install ...' them all
 from bottle import Bottle, route, run, template, static_file
 from PIL import Image
-from gevent import monkey
 import rarfile
 
 import azLib as al
@@ -351,8 +350,6 @@ def cgMode(page):
 # ----------------------------------------------------------------------
 	
 if __name__ == '__main__':
-	# evrCheck()
-	monkey.patch_all()
 
 	bookLst = fo.classifiedFileLst(ROOT_LIB, ['.zip', '.rar'])
 	cfs_md5 = hs.str2md5(str(bookLst).encode())
@@ -361,4 +358,4 @@ if __name__ == '__main__':
 	with open(FNAME_MAP, 'wb') as o:
 		pickle.dump(hashLst, o)
 
-	run(host=HOST, port=PORT, debug=True, server='gevent')
+	run(host=HOST, port=PORT, debug=True)
