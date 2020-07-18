@@ -214,6 +214,8 @@ def indexGen(bookLst, isIndex=True, root=ROOT_LIB, extraShelf=[]):
 	return stdHTML
 
 def picBlock(imgPath, Url, text):
+	if os.name == 'nt':
+		text = ''
 	return '''
 			<li class="li gallary_item">
 			<div class="pic_box">{0}</div>
@@ -272,8 +274,8 @@ def index():
 		print('New file list created.')
 		hashLst = {}
 		stdHTML = indexGen(bookLst, extraShelf=['/cgs/0'])
-		RW(FNAME_FS.decode(), bookLst_md5, 'w')
-		RW(FNAME_IDX.decode(), stdHTML, 'w')
+		RW(FNAME_FS, bookLst_md5, 'w')
+		RW(FNAME_IDX, stdHTML, 'w')
 		with open(FNAME_MAP, 'wb') as o:
 			pickle.dump(hashLst, o)
 		return stdHTML
