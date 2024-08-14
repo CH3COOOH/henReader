@@ -80,6 +80,7 @@ try:
 	FNAME_IDX = dc['PATH_IDX']
 	FNAME_MAP = dc['PATH_MAP']
 	TITLE_INDEX = dc['title_index']
+	rarfile.UNRAR_TOOL = dc['CMD_RAR']
 except:
 	print('There is no valid ./config.json. Default config used.')
 

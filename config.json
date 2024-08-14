@@ -11,5 +11,6 @@
 	"PATH_IDX": "index.htm",
 	"PATH_MAP": "status.pcl",
 
-	"title_index": "henReader"
+	"title_index": "henReader",
+	"CMD_RAR": "./unrar"
 }
