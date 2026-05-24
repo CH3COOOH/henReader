@@ -142,11 +142,12 @@ def RW(fname, content, operation):
 # =================================================
 # This section is designed to generate html script
 # =================================================
-def imgUrlGen(path, url=False, resize=(128, 128), ID=None):
+def imgUrlGen(path, url=False, resize=(128, 128), ID=None, centered=False):
+	style = ' style="display: block; margin: 0 auto;"' if centered else ''
 	if not url:
-		return '<img src=\"%s\" width=\"%d\" height=\"%d\">' % (path, resize[0], resize[1])
+		return '<img src=\"%s\" width=\"%d\" height=\"%d\"%s>' % (path, resize[0], resize[1], style)
 	else:
-		return '<a href=\"%s\" target=\"%s\"><img src=\"%s\" id=\"%s\"></a>' % (url[0], url[1], path, ID)
+		return '<a href=\"%s\" target=\"%s\"><img src=\"%s\" id=\"%s\"%s></a>' % (url[0], url[1], path, ID, style)
 
 def standardHTML(title, content):
 	return '''
@@ -237,9 +238,9 @@ class Plugins:
 		imgPath = filter(lambda x: os.path.splitext(x)[-1].lower() in ['.jpg', '.png', '.gif', '.jpeg', '.webp'], os.listdir(root_img))
 		imgPath = list(map(lambda x: root_imgUrl+'/'+x, imgPath))
 		if page+1 == len(imgPath):
-			html = imgUrlGen(imgPath[page], ('%s/%d' % (root_pageUrl, 0), ''), (1,1), 'mainImg') + '<br>'
+			html = imgUrlGen(imgPath[page], ('%s/%d' % (root_pageUrl, 0), ''), (1,1), 'mainImg', centered=True) + '<br>'
 		else:
-			html = imgUrlGen(imgPath[page], ('%s/%d' % (root_pageUrl, page+1), ''), (1,1), 'mainImg') + '<br>'
+			html = imgUrlGen(imgPath[page], ('%s/%d' % (root_pageUrl, page+1), ''), (1,1), 'mainImg', centered=True) + '<br>'
 		for i in range(len(imgPath)):
 			html += '<a href=\"%s/%d\">[%d]</a>' % (root_pageUrl, i, i)
 		html += '''
@@ -318,7 +319,7 @@ def reader(pathHash, page):
 		return 'You have finished this book.'
 	fCurrent = 'data:image/jpeg;base64,' + base64.b64encode(zbook.read(imgLst[int(page)])).decode()
 	zbook.close()
-	html_img = imgUrlGen(fCurrent, ('/book/%s/%d' % (pathHash, int(page)+1), ''), (1,1), 'mainImg') + '<br>'
+	html_img = imgUrlGen(fCurrent, ('/book/%s/%d' % (pathHash, int(page)+1), ''), (1,1), 'mainImg', centered=True) + '<br>'
 	for i in range(page_total):
 		html_img += '<a href=\"/book/%s/%d\">[%d]</a>' % (pathHash, i, i)
 	html_img += '''
