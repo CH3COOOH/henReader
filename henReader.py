@@ -131,11 +131,11 @@ def achFormate(ext, path):
 
 def RW(fname, content, operation):
 	if operation == 'w':
-		with open(fname, 'w') as o:
+		with open(fname, 'w', encoding='utf-8') as o:
 			o.write(content)
 		return 0
 	else:
-		with open(fname, 'r') as o:
+		with open(fname, 'r', encoding='utf-8') as o:
 			return o.read()
 
 
@@ -215,8 +215,6 @@ def indexGen(bookLst, isIndex=True, root=ROOT_LIB, extraShelf=[]):
 	return stdHTML
 
 def picBlock(imgPath, Url, text):
-	if os.name == 'nt':
-		text = ''
 	return '''
 			<li class="li gallary_item">
 			<div class="pic_box">{0}</div>
@@ -267,7 +265,8 @@ def index():
 	bookLst = fo.classifiedFileLst(ROOT_LIB, ['.zip', '.rar'])
 	bookLst_md5 = hs.str2md5(str(bookLst).encode())
 	
-	if bookLst_md5 == RW(FNAME_FS, None, 'r'):
+	# Regenerate page cache on Windows so old non-UTF-8 index files do not cause garbled titles.
+	if os.name != 'nt' and bookLst_md5 == RW(FNAME_FS, None, 'r'):
 		with open(FNAME_MAP, 'rb') as o:
 			hashLst = pickle.load(o)
 		return static_file(FNAME_IDX, root='.')
