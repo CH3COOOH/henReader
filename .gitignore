@@ -2,3 +2,5 @@ __pycache__/
 ._*
 *.pcl
 index.htm
+thumb/
+*.md5

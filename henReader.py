@@ -203,7 +203,7 @@ def indexGen(bookLst, isIndex=True, root=ROOT_LIB, extraShelf=[]):
 				path_thumb = ROOT_THUMB + bn_md5
 				if os.path.exists(path_thumb) == False:
 					with open('%s' % path_thumb, 'wb' ) as o:
-						o.write(ach.read(sorted(extFilter(ach.namelist(), ['.jpg', '.png', '.jpeg']))[0]))
+						o.write(ach.read(sorted(extFilter(ach.namelist(), ['.jpg', '.png', '.jpeg', '.webp']))[0]))
 					imgCompress(path_thumb, path_thumb, (256, 256))
 				ach.close()
 
@@ -234,7 +234,7 @@ class Plugins:
 			return ''
 	
 	def CGMode(self, root_img, root_imgUrl='/cg', root_pageUrl='/cgs', page=0):
-		imgPath = filter(lambda x: os.path.splitext(x)[-1] in ['.jpg', '.png', '.gif', '.jpeg'], os.listdir(root_img))
+		imgPath = filter(lambda x: os.path.splitext(x)[-1].lower() in ['.jpg', '.png', '.gif', '.jpeg', '.webp'], os.listdir(root_img))
 		imgPath = list(map(lambda x: root_imgUrl+'/'+x, imgPath))
 		if page+1 == len(imgPath):
 			html = imgUrlGen(imgPath[page], ('%s/%d' % (root_pageUrl, 0), ''), (1,1), 'mainImg') + '<br>'
@@ -312,7 +312,7 @@ def reader(pathHash, page):
 		zbook = zipfile.ZipFile(bookPath)
 	elif fExt == '.rar':
 		zbook = rarfile.RarFile(bookPath)
-	imgLst = sorted(extFilter(zbook.namelist(), ['.jpg', '.png', '.jpeg']), key=emb_numbers)
+	imgLst = sorted(extFilter(zbook.namelist(), ['.jpg', '.png', '.jpeg', '.webp']), key=emb_numbers)
 	page_total = len(imgLst)
 	if int(page) >= page_total:
 		return 'You have finished this book.'
